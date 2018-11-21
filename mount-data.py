@@ -109,4 +109,4 @@ for so in service_offers:
 # FIXME: attach to s3fs foreground process instead
 #
 
-os.chdir('tail /dev/null')
+os.system('tail -f /dev/null')
