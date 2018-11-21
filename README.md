@@ -24,6 +24,22 @@ The container will do the following:
 Client containers can simply reference the volume with the standard
 Docker command line options.
 
+To run the container use the following command:
+```
+docker build --tag s3data .
+
+docker run --cap-add SYS_ADMIN --device /dev/fuse \
+           s3data \
+           --key ... \
+           --secret ... \
+           --id ... \
+           --server-url ...
+```
+
+The `--key`, `--secret`, and `--id` options are required.  The
+`--server-url` option will default to "https://nuv.la" if not
+provided.
+
 ## License
 
 Copyright 2018, SixSq Sàrl

@@ -101,7 +101,7 @@ for so in service_offers:
   
   if not os.path.exists(bucket_mount_point):
     os.makedirs(bucket_mount_point)
-    cmd = s3_mnt_cmd.format(so_bucket, bucket_mount_point, passwd_file_path, object_store_endpoint)
+    cmd = s3_mount_cmd.format(so_bucket, bucket_mount_point, passwd_file_path, object_store_endpoint)
     os.system(cmd)
   os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, data_path))
   
@@ -109,4 +109,4 @@ for so in service_offers:
 # FIXME: attach to s3fs foreground process instead
 #
 
-# os.chdir('tail /dev/null')
+os.chdir('tail /dev/null')
