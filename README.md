@@ -12,7 +12,7 @@ As input, the container requires the following information:
  * `api_secret`: secret value paired with the API key
  * `deployment_id`: identifier for the deployment
 
-The container will do the following:
+The container will do (ideally) the following:
 
  * Download the deployment information from the SlipStream server.
  * Extract S3 bucket/object information from deployment.
@@ -23,6 +23,8 @@ The container will do the following:
 
 Client containers can simply reference the volume with the standard
 Docker command line options.
+
+# Starting the Container
 
 To run the container use the following command:
 ```
@@ -39,6 +41,50 @@ docker run --cap-add SYS_ADMIN --device /dev/fuse \
 The `--key`, `--secret`, and `--id` options are required.  The
 `--server-url` option will default to "https://nuv.la" if not
 provided.
+
+# Results
+
+Tests were run to see if the container can provide the required
+functionality.  The main conclusions are:
+
+ * The s3fs fuse filesystem **can** be used to access the S3 objects
+   within a container.
+   
+ * Doing so requires flags to add system administrator privileges to
+   the container (SYS_ADMIN) and access to the FUSE device.  This may
+   not be possible on a shared container infrastructure.
+
+ * As noted in some other attempts to use s3fs with Docker, the
+   mounted s3fs filesystem **cannot** be exported (usefully) as a
+   volume. The volume is created and can be seen by other containers,
+   but the actual objects cannot be accessed.
+
+A demonstration of this implementation could be done on a private
+container infrastructure (to allow for increased permissions) and on
+containers that directly include and mount the s3fs filesystem.
+
+Overall, this implementation does not provide a convenient, general
+mechanism for accessing S3 objects via containers.
+
+# Alternatives
+
+ * Use the same scheme, but share the data via NFS (or GFS) instead of
+   via Docker volumes.  This would work identically on both VMs and
+   containers. However, it still has the disadvantage of needing
+   increased privileges on container infrastructures.
+
+ * Move to the s3fs RexRay Docker plugin.  This would provide the
+   mounted S3 filesystem to containers as Docker volumes. Refactoring
+   of the plugin could make it more object-oriented (rather than
+   bucket-oriented) and less AWS-specific. As with the previous case,
+   this would still require enhanced privileges for the plugin on the
+   container infrastructure.
+
+ * Investigate the use of external object URLs to provide access to
+   the data. This would provide a lighter-weight client, but exposing
+   the data via POSIX would still have the same privilege problems as
+   for the other solutions using the FUSE filesystem.
+
 
 ## License
 
