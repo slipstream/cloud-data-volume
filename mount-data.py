@@ -1,52 +1,48 @@
 #!/usr/bin/python
 
-import argparse
 import ConfigParser
 import sys
 from slipstream.api import Api
 import os
+
+context_file = "/opt/slipstream/client/bin/slipstream.context"
 
 s3_mount_cmd = 's3fs {0} {1} -o ro -o nonempty -o passwd_file={2} -o url={3} -o use_path_request_style'
 
 deployment_params_filter="deployment/href='{}' and name='{}'"
 
 #
-# Define parser and parse command line arguments.
+# Read the configuration.
 #
 
-parser = argparse.ArgumentParser(description='Create and serve directory with mounted S3 objects.')
+config = ConfigParser.RawConfigParser()
+config.read(context_file)
 
-parser.add_argument('--service-url', dest='service_url', metavar='URL',
-                    default='https://nuv.la',
-                    help='SlipStream service url')
-parser.add_argument('--key', dest='api_key', metavar='KEY',
-                    required=True,
-                    help='API key')
-parser.add_argument('--secret', dest='api_secret', metavar='SECRET',
-                    required=True,
-                    help='API secret')
-parser.add_argument('--id', dest='deployment_id', metavar='ID',
-                    required=True,
-                    help='deployment identifier')
-
-args = parser.parse_args()
+api_key = config.get('contextualization', 'api_key')
+api_secret = config.get('contextualization', 'api_secret')
+service_url = config.get('contextualization', 'serviceurl')
+deployment_id = config.get('contextualization', 'diid')
 
 #
 # Setup the SlipStream API.
 #
 
-api = Api(endpoint=args.service_url)
-api.login_apikey(args.api_key, args.api_secret)
+api = Api(endpoint=service_url)
+api.login_apikey(api_key, api_secret)
 
 # Recover deployment information. 
 
-deployment = api.cimi_get(args.deployment_id)
-service_offers = deployment.json['serviceOffers']
+deployment = api.cimi_get(deployment_id)
 
+try:
+  service_offers = deployment.json['serviceOffers']
+except KeyError:
+  service_offers = []
+  
 # Recover credential for mounting buckets.
 
 depl_params = api.cimi_search('deploymentParameters',
-                              filter=deployment_params_filter.format(args.deployment_id, 'credential.id'))
+                              filter=deployment_params_filter.format(deployment_id, 'credential.id'))
 
 
 credential_id = depl_params.resources_list[0].json['value']
@@ -59,7 +55,10 @@ connector_ref = credential.json['connector']['href']
 
 connector = api.cimi_get(connector_ref)
 
-object_store_endpoint = connector.json['objectStoreEndpoint']
+try:
+  object_store_endpoint = connector.json['objectStoreEndpoint']
+except KeyError:
+  object_store_endpoint = None
 
 #
 # create password file for s3fs
@@ -80,11 +79,11 @@ os.chmod(passwd_file_path, 0600)
 # setup directories for mounts and object links
 #
 
-buckets_base_path = '/buckets/'
+buckets_base_path = '/opt/slipstream/buckets/'
 if not os.path.exists(buckets_base_path):
   os.makedirs(buckets_base_path)
 
-data_path='/data/'
+data_path='/gssc/data/slipstream/'
 if not os.path.exists(data_path):
   os.makedirs(data_path)
 
@@ -101,12 +100,8 @@ for so in service_offers:
   
   if not os.path.exists(bucket_mount_point):
     os.makedirs(bucket_mount_point)
+
+  if object_store_endpoint:
     cmd = s3_mount_cmd.format(so_bucket, bucket_mount_point, passwd_file_path, object_store_endpoint)
     os.system(cmd)
-  os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, data_path))
-  
-#
-# FIXME: attach to s3fs foreground process instead
-#
-
-os.system('tail -f /dev/null')
+    os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, data_path))
