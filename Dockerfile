@@ -7,8 +7,8 @@ ADD mount-data.py /opt/slipstream/bin/mount-data.py
 RUN chmod a+x /opt/slipstream/bin/mount-data.py
 ADD startup.sh /opt/slipstream/bin/startup.sh
 RUN chmod a+x /opt/slipstream/bin/startup.sh
-RUN mkdir -p /opt/python/bin/
-RUN ln -s /usr/bin/python2.7 /opt/python/bin/python
+#RUN mkdir -p /opt/python/bin/
+#RUN ln -s /usr/bin/python2.7 /opt/python/bin/python
 
 #ENTRYPOINT ["/opt/slipstream/bin/startup.sh"]
 ENTRYPOINT ["tail" "-f" "/dev/null"]
