@@ -34,22 +34,25 @@ service_offer_template = {"resourceURI": "http://sixsq.com/slipstream/1/ServiceO
                           "gnss:type": "feCapture",
                           "gnss:unit_id": "prototype",
 
-                          "resource:bucket": "...",
-                          "resource:object": "...",
                           "resource:protocol": "NFS",
                           "resource:type": "DATA",
 
+                          "data:bucket": "...",
+                          "data:object": "...",
                           "data:location": "...",
                           "data:contentType": "...",
                           "data:bytes": 123,
                           "data:timestamp": "...",
-                          "data:protocols": ["tcp+nfs"]
+                          "data:protocols": ["tcp+nfs"],
+                          "data:nfsIP": "...",
+                          "data:nfsDevice": "..."
                           }
 
 t_start = datetime(2018, 12, 1)
 
 credentials = {"connector/exoscale-at-vie": {"href": "credential/e9ecf035-c997-43ac-8bc7-fa872e0e9f88"},
-               "connector/exoscale-ch-gva": {"href": "credential/ecbd467b-0249-4093-b708-790024f21bc5"}}
+               "connector/exoscale-ch-gva": {"href": "credential/ecbd467b-0249-4093-b708-790024f21bc5"},
+               "connector/gnss-swarm": {"href": "credential/919815a4-680f-4a5c-b28f-9b70cc485353"}}
 
 clouds = {"exoscale-ch-gva": {"gnss:hgt": 373.0,
                               "gnss:lat": 46.204391,
@@ -85,16 +88,21 @@ def generate_service_offer(tmpl, i):
     name = "GNSS_TEST_" + object_name
     description = bucket_name + "/" + object_name + "    " + content_type
 
+    ip = '194.182.161.238'
+    device = '/data/{}'.format(bucket_name)
+
     gnss_info.update({"name": name,
                       "description": description,
                       "connector": {"href": ("connector/" + cloud_name)},
                       "gnss:type": rand_type,
                       "gnss:timestamp": timestamp_gnss,
-                      "resource:bucket": bucket_name,
-                      "resource:object": object_name,
+                      "data:bucket": bucket_name,
+                      "data:object": object_name,
                       "data:contentType": content_type,
                       "data:bytes": randint(1024, 4096),
-                      "data:timestamp": timestamp})
+                      "data:timestamp": timestamp,
+                      "data:nfsIP": ip,
+                      "data:nfsDevice": device})
     tmpl.update(gnss_info)
     return tmpl
 
@@ -102,9 +110,9 @@ def generate_service_offer(tmpl, i):
 def create_and_fill_external_object(service_offer):
     name = service_offer["name"]
     description = service_offer["description"]
-    bucket_name = service_offer["resource:bucket"]
+    bucket_name = service_offer["data:bucket"]
     content_type = service_offer["data:contentType"]
-    object_name = service_offer["resource:object"]
+    object_name = service_offer["data:object"]
     bytes = service_offer["data:bytes"]
     connector = service_offer["connector"]["href"]
     credential = credentials[connector]
@@ -115,8 +123,8 @@ def create_and_fill_external_object(service_offer):
     _set_ready(resource_id)
 
 def create_nfs_file(service_offer):
-    folder_name = './{}'.format(service_offer["resource:bucket"])
-    object_name = service_offer["resource:object"]
+    folder_name = service_offer["data:nfsDevice"]
+    object_name = service_offer["data:object"]
     bytes = service_offer["data:bytes"]
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
@@ -162,4 +170,4 @@ for i in xrange(0, seconds, step_sec):
     #create_and_fill_external_object(service_offer)
     create_nfs_file(service_offer)
     api.cimi_add("serviceOffers", service_offer)
-    # print(json.dumps(service_offer, indent=2))
+    print(json.dumps(service_offer, indent=2))
