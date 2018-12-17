@@ -1,9 +1,14 @@
+
 FROM nginx:latest
+
 RUN apt-get update && apt-get install -y python python-pip
+
 RUN mkdir -p /opt/slipstream/bin
 ADD link-data.py /opt/slipstream/bin/link-data.py
 RUN chmod a+x /opt/slipstream/bin/link-data.py
+
 ADD default.conf /etc/nginx/conf.d/default.conf
 
-CMD ["-f" "/dev/null"]
-ENTRYPOINT ["/usr/bin/tail"]
+ADD tailf.sh /tailf.sh
+RUN chmod a+x /tailf.sh
+ENTRYPOINT ["/tailf.sh"]
