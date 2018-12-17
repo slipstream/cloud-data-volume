@@ -45,7 +45,7 @@ buckets_base_path = '/mnt/'
 if not os.path.exists(buckets_base_path):
   os.makedirs(buckets_base_path)
 
-data_path='/usr/share/nginx/html/'
+data_path='/usr/share/nginx/html/data/'
 if not os.path.exists(data_path):
   os.makedirs(data_path)
 
