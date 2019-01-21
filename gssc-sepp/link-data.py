@@ -4,6 +4,7 @@ import ConfigParser
 import sys
 from slipstream.api import Api
 import os
+import re
 
 context_file = "/opt/slipstream/client/bin/slipstream.context"
 
@@ -21,6 +22,12 @@ api_secret = config.get('contextualization', 'api_secret')
 service_url = config.get('contextualization', 'serviceurl')
 deployment_id = config.get('contextualization', 'diid')
 
+
+def mkdirIfMissing(dirname):
+  if not os.path.exists(dirname):
+    os.makedirs(dirname)
+
+
 #
 # Setup the SlipStream API.
 #
@@ -28,7 +35,7 @@ deployment_id = config.get('contextualization', 'diid')
 api = Api(endpoint=service_url)
 api.login_apikey(api_key, api_secret)
 
-# Recover deployment information. 
+# Recover deployment information.
 
 deployment = api.cimi_get(deployment_id)
 
@@ -36,18 +43,16 @@ try:
   service_offers = deployment.json['serviceOffers']
 except KeyError:
   service_offers = []
-  
+
 #
 # setup directories for object links
 #
 
 buckets_base_path = '/mnt/'
-if not os.path.exists(buckets_base_path):
-  os.makedirs(buckets_base_path)
+mkdirIfMissing(buckets_base_path)
 
 data_path='/gssc/data/slipstream/'
-if not os.path.exists(data_path):
-  os.makedirs(data_path)
+
 
 #
 # mount the buckets containing the requested objects
@@ -55,12 +60,24 @@ if not os.path.exists(data_path):
 
 for so in service_offers:
   so_doc = api.cimi_get(so)
-  so_bucket = so_doc.json['data:bucket']
-  so_object = so_doc.json['data:object']
+  so_id = so_doc.json['id']
 
-  bucket_mount_point = buckets_base_path + so_bucket
-  
-  if not os.path.exists(bucket_mount_point):
-    os.makedirs(bucket_mount_point)
+  for ds in service_offers[so_id]:
+    dataset_folder = re.sub("/", "_", ds)
+    mkdirIfMissing(data_path + dataset_folder)
 
-  os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, data_path))
+    so_bucket = so_doc.json['data:bucket']
+    so_object = so_doc.json['data:object']
+
+    so_name = so_doc.json['name']
+
+    folder = re.sub("[^a-z0-9]", "_", so_name.lower())
+
+    full_data_path = '{0}{1}/{2}/'.format(data_path, dataset_folder, folder)
+
+    bucket_mount_point = buckets_base_path + so_bucket
+
+    mkdirIfMissing(bucket_mount_point)
+    mkdirIfMissing(full_data_path)
+
+    os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, full_data_path))
