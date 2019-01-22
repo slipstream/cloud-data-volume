@@ -58,8 +58,12 @@ dataset_names = {}
 def get_dataset_name(dataset_id):
   if dataset_id not in dataset_names:
     ds = api.cimi_get(dataset_id)
-    dataset_names[dataset_id]=re.sub("[^A-Za-z0-9]", "_", ds.json['name'])
+    try:
+      ds_name = ds.json['name']
+    except KeyError:
+      ds_name = dataset_id;
 
+    dataset_names[dataset_id]=re.sub("[^A-Za-z0-9]", "_", ds_name)
   return dataset_names[dataset_id]
 
 #
@@ -76,8 +80,6 @@ for so in service_offers:
 
     so_bucket = so_doc.json['data:bucket']
     so_object = so_doc.json['data:object']
-
-    so_name = so_doc.json['name']
 
     full_data_path = '{0}{1}'.format(data_path, dataset_folder)
 
