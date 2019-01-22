@@ -23,7 +23,7 @@ service_url = config.get('contextualization', 'serviceurl')
 deployment_id = config.get('contextualization', 'diid')
 
 
-def mkdirIfMissing(dirname):
+def mkdir_if_missing(dirname):
   if not os.path.exists(dirname):
     os.makedirs(dirname)
 
@@ -49,7 +49,7 @@ except KeyError:
 #
 
 buckets_base_path = '/mnt/'
-mkdirIfMissing(buckets_base_path)
+mkdir_if_missing(buckets_base_path)
 
 data_path='/gssc/data/slipstream/'
 
@@ -72,7 +72,7 @@ for so in service_offers:
 
   for dataset_id in service_offers[so_id]:
     dataset_folder = get_dataset_name(dataset_id)
-    mkdirIfMissing(data_path + dataset_folder)
+    mkdir_if_missing(data_path + dataset_folder)
 
     so_bucket = so_doc.json['data:bucket']
     so_object = so_doc.json['data:object']
@@ -83,7 +83,7 @@ for so in service_offers:
 
     bucket_mount_point = buckets_base_path + so_bucket
 
-    mkdirIfMissing(bucket_mount_point)
-    mkdirIfMissing(full_data_path)
+    mkdir_if_missing(bucket_mount_point)
+    mkdir_if_missing(full_data_path)
 
     os.system('ln -s {0}/{1} {3}/{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, full_data_path))
