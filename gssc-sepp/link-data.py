@@ -10,7 +10,7 @@ context_file = "/opt/slipstream/client/bin/slipstream.context"
 
 deployment_params_filter="deployment/href='{}' and name='{}'"
 
-#
+#s
 # Read the configuration.
 #
 
@@ -53,6 +53,14 @@ mkdirIfMissing(buckets_base_path)
 
 data_path='/gssc/data/slipstream/'
 
+dataset_names = {}
+
+def get_dataset_name(dataset_id):
+  if dataset_id not in dataset_names:
+    ds = api.cimi_get(dataset_id)
+    dataset_names[dataset_id]=re.sub("[^A-Za-z0-9]", "_", ds.json['name'])
+
+  return dataset_names[dataset_id]
 
 #
 # mount the buckets containing the requested objects
@@ -62,8 +70,8 @@ for so in service_offers:
   so_doc = api.cimi_get(so)
   so_id = so_doc.json['id']
 
-  for ds in service_offers[so_id]:
-    dataset_folder = re.sub("/", "_", ds)
+  for dataset_id in service_offers[so_id]:
+    dataset_folder = get_dataset_name(dataset_id)
     mkdirIfMissing(data_path + dataset_folder)
 
     so_bucket = so_doc.json['data:bucket']
@@ -71,13 +79,11 @@ for so in service_offers:
 
     so_name = so_doc.json['name']
 
-    folder = re.sub("[^a-z0-9]", "_", so_name.lower())
-
-    full_data_path = '{0}{1}/{2}/'.format(data_path, dataset_folder, folder)
+    full_data_path = '{0}{1}'.format(data_path, dataset_folder)
 
     bucket_mount_point = buckets_base_path + so_bucket
 
     mkdirIfMissing(bucket_mount_point)
     mkdirIfMissing(full_data_path)
 
-    os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, full_data_path))
+    os.system('ln -s {0}/{1} {3}/{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, full_data_path))
