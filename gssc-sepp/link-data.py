@@ -10,7 +10,7 @@ context_file = "/opt/slipstream/client/bin/slipstream.context"
 
 deployment_params_filter="deployment/href='{}' and name='{}'"
 
-#s
+#
 # Read the configuration.
 #
 
