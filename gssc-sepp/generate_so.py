@@ -11,7 +11,11 @@ from slipstream.api import Api
 
 api = Api()
 
-data_formats = ["feCapture", "ionMessage", "cotsData", "sdrData"]
+data_formats = [# "feCapture",
+                "ionMessage"
+                # "cotsData",
+                #"sdrData"
+               ]
 
 service_offer_template = {"resourceURI": "http://sixsq.com/slipstream/1/ServiceOffer",
                           "acl": {"owner": {"principal": "ADMIN",
@@ -50,24 +54,30 @@ service_offer_template = {"resourceURI": "http://sixsq.com/slipstream/1/ServiceO
 
 t_start = datetime(2018, 12, 1)
 
-credentials = {"connector/exoscale-at-vie": {"href": "credential/e9ecf035-c997-43ac-8bc7-fa872e0e9f88"},
-               "connector/exoscale-ch-gva": {"href": "credential/ecbd467b-0249-4093-b708-790024f21bc5"},
-               "connector/gnss-swarm": {"href": "credential/919815a4-680f-4a5c-b28f-9b70cc485353"}}
+minio_credential = "credential/bdfed89f-f569-4377-9738-9235907443b6"
 
-clouds = {"exoscale-ch-gva": {"gnss:hgt": 373.0,
-                              "gnss:lat": 46.204391,
-                              "gnss:lon": 6.143158,
-                              "data:location": "46.204391, 6.143158"},
-          "exoscale-at-vie": {"gnss:hgt": 188.0,
-                              "gnss:lat": 48.210033,
-                              "gnss:lon": 16.363449,
-                              "data:location": "48.210033, 16.363449"},
-                              "gnss-swarm":      {"gnss:hgt": 373.0,
-                                        "gnss:lat": 46.204391,
-                                        "gnss:lon": 6.143158,
-                                        "data:location": "46.204391, 6.143158"},
+credentials = {# "connector/exoscale-at-vie": {"href": "credential/e9ecf035-c997-43ac-8bc7-fa872e0e9f88"},
+               # "connector/exoscale-ch-gva": {"href": "credential/ecbd467b-0249-4093-b708-790024f21bc5"},
+               # "connector/gnss-swarm": {"href": "credential/919815a4-680f-4a5c-b28f-9b70cc485353"},
+               "connector/esa-swarm-gnss": {"href": "credential/be693f62-e407-4b5e-8de9-4c6a43a93c66"}}
 
-                              }
+clouds = {#"exoscale-ch-gva": {"gnss:hgt": 373.0,
+          #                    "gnss:lat": 46.204391,
+          #                    "gnss:lon": 6.143158,
+          #                    "data:location": "46.204391, 6.143158"},
+          #"exoscale-at-vie": {"gnss:hgt": 188.0,
+          #                    "gnss:lat": 48.210033,
+          #                    "gnss:lon": 16.363449,
+          #                    "data:location": "48.210033, 16.363449"},
+          #"gnss-swarm":      {"gnss:hgt": 373.0,
+          #                    "gnss:lat": 46.204391,
+          #                    "gnss:lon": 6.143158,
+          #                    "data:location": "46.204391, 6.143158"},
+          "esa-swarm-gnss":  {"gnss:hgt": 655.150,
+                              "gnss:lat": 40.44250000,
+                              "gnss:lon": 3.95166667,
+                              "data:location": "40.44250000, 3.95166667"}
+}
 
 
 def generate_service_offer(tmpl, i):
@@ -88,8 +98,8 @@ def generate_service_offer(tmpl, i):
     name = "GNSS_TEST_" + object_name
     description = bucket_name + "/" + object_name + "    " + content_type
 
-    ip = '194.182.161.238'
-    device = '/data/{}'.format(bucket_name)
+    ip = 'dmz7-int.dmz-citi-fs.esoc.esa.int'
+    device = '/gnss_dmz_nas/minio/{}'.format(bucket_name)
 
     gnss_info.update({"name": name,
                       "description": description,
@@ -115,7 +125,7 @@ def create_and_fill_external_object(service_offer):
     object_name = service_offer["data:object"]
     bytes = service_offer["data:bytes"]
     connector = service_offer["connector"]["href"]
-    credential = credentials[connector]
+    credential = minio_credential # credentials[connector]
 
     resource_id = _create_external_object(name, description, bucket_name, content_type, object_name, credential)
     upload_url = _generate_upload_url_external_object(resource_id)
@@ -134,14 +144,14 @@ def create_nfs_file(service_offer):
 
 
 def _create_external_object(name, description, bucket_name, content_type, object_name, credential):
-    resp = api.cimi_add('externalObjects',
-                        {'name': name,
-                         'description': description,
-                         'externalObjectTemplate': {'href': 'external-object-template/generic',
-                                                    'bucketName': bucket_name,
-                                                    'contentType': content_type,
-                                                    'objectName': object_name,
-                                                    'objectStoreCred': credential}})
+    document = {'name': name,
+                'description': description,
+                'externalObjectTemplate': {'href': 'external-object-template/generic',
+                                           'bucketName': bucket_name,
+                                           'contentType': content_type,
+                                           'objectName': object_name,
+                                           'objectStoreCred': credential}}
+    resp = api.cimi_add('externalObjects', document)
     return resp.json['resource-id']
 
 
@@ -162,12 +172,13 @@ def _upload_data(url, content_type, bytes):
     resp = requests.put(url, data=body, headers=headers)
 
 
-seconds = 1 * 24 * 3600  # 1 days in seconds
-step_sec = 15 * 60  # every 15 minutes
+seconds = 2 * 24 * 3600  # 2 days in seconds
+step_sec = 20 * 60  # every 20 minutes
 
-for i in xrange(0, seconds, step_sec):
+# for i in xrange(0, seconds, step_sec):
+for i in xrange(0, 2, 1):
     service_offer = generate_service_offer(service_offer_template, i)
     #create_and_fill_external_object(service_offer)
-    create_nfs_file(service_offer)
-    api.cimi_add("serviceOffers", service_offer)
+    #create_nfs_file(service_offer)
+    #api.cimi_add("serviceOffers", service_offer)
     print(json.dumps(service_offer, indent=2))

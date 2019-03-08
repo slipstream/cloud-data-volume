@@ -1,0 +1,14 @@
+{
+    "name": "eo test",
+    "description": "test of creating an external object via nuvla",
+    "externalObjectTemplate": {
+        "objectName": "eo-test",
+        "objectType": "generic",
+        "objectStoreCred": {
+            "href": "credential/bdfed89f-f569-4377-9738-9235907443b6"
+        },
+        "bucketName": "testbucket-002",
+        "contentType": "text/plain",
+        "href": "external-object-template/generic"
+    }
+}
