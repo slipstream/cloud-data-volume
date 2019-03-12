@@ -2,6 +2,9 @@
 
 import sys
 import os
+import random
+import string
+import uuid
 from nuvla.api import Api
 
 deployment_params_filter="deployment/href='{}' and name='{}'"
@@ -30,7 +33,7 @@ if (endpoint is None or
 # Setup the Nuvla API.
 #
 
-api = Api(endpoint=endpoint)
+api = Api(endpoint=endpoint, insecure=True)
 api.login_apikey(api_key, api_secret)
 
 # Recover deployment information. 
@@ -38,9 +41,9 @@ api.login_apikey(api_key, api_secret)
 deployment = api.get(deployment_id)
 
 try:
-  service_offers = deployment.data['service-offers']
+  data_records = deployment.data['data-records']
 except KeyError:
-  service_offers = []
+  data_records = {}
   
 #
 # setup directories for object links
@@ -58,14 +61,39 @@ if not os.path.exists(data_path):
 # mount the buckets containing the requested objects
 #
 
-for so in service_offers:
-  so_doc = api.get(so)
-  so_bucket = so_doc.data['data:bucket']
-  so_object = so_doc.data['data:object']
+for dr in data_records.keys():
+  dr_doc = api.get(dr)
+  dr_bucket = dr_doc.data['data:bucket']
+  dr_object = dr_doc.data['data:object']
 
-  bucket_mount_point = buckets_base_path + so_bucket
+  bucket_mount_point = buckets_base_path + dr_bucket
   
   if not os.path.exists(bucket_mount_point):
     os.makedirs(bucket_mount_point)
 
-  os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, so_object, so_bucket, data_path))
+  os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, dr_object, dr_bucket, data_path))
+
+#
+# generate token for jupyter
+#
+
+token=''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(24))
+
+token_file = open('/root/token.txt', 'w')
+token_file.write(token)
+token_file.close()
+
+def from_data_uuid(text):
+    class NullNameSpace:
+        bytes = b''
+
+    return str(uuid.uuid3(NullNameSpace, text))
+
+def deployment_param_href(deployment_id, node_id, param_name):
+        param_id = ':'.join(item or '' for item in [deployment_id, node_id, param_name])
+        return 'deployment-parameter/' + from_data_uuid(param_id)
+
+param_id = deployment_param_href(deployment_id, deployment_id.split('/')[1], 'jupyter-token')
+
+api.edit(param_id, {'value': token})
+
