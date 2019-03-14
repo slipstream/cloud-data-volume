@@ -66,12 +66,14 @@ for dr in data_records.keys():
   dr_bucket = dr_doc.data['data:bucket']
   dr_object = dr_doc.data['data:object']
 
+  dr_mission = dr_doc.data['gnss:mission']
+
   bucket_mount_point = buckets_base_path + dr_bucket
   
   if not os.path.exists(bucket_mount_point):
     os.makedirs(bucket_mount_point)
 
-  os.system('ln -s {0}/{1} {3}{2}__{1}'.format(bucket_mount_point, dr_object, dr_bucket, data_path))
+  os.system('ln -s {0}/{1} {4}{3}/{2}__{1}'.format(bucket_mount_point, dr_object, dr_bucket, dr_mission, data_path))
 
 #
 # generate token for jupyter
