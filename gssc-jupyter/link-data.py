@@ -73,6 +73,11 @@ for dr in data_records.keys():
   if not os.path.exists(bucket_mount_point):
     os.makedirs(bucket_mount_point)
 
+  data_directory = data_path + dr_mission
+  
+  if not os.path.exists(data_directory):
+    os.makedirs(data_directory)
+
   os.system('ln -s {0}/{1} {4}{3}/{2}__{1}'.format(bucket_mount_point, dr_object, dr_bucket, dr_mission, data_path))
 
 #
