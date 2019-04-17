@@ -63,22 +63,20 @@ if not os.path.exists(data_path):
 
 for dr in data_records.keys():
   dr_doc = api.get(dr)
-  dr_bucket = dr_doc.data['data:bucket']
-  dr_object = dr_doc.data['data:object']
+  dr_target = dr_doc.data['mount']['target']
+  dr_object = dr_doc.data['name']
 
   dr_mission = dr_doc.data['gnss:mission']
 
-  bucket_mount_point = buckets_base_path + dr_bucket
-  
-  if not os.path.exists(bucket_mount_point):
-    os.makedirs(bucket_mount_point)
+  if not os.path.exists(dr_target):
+    os.makedirs(dr_target)
 
   data_directory = data_path + dr_mission
   
   if not os.path.exists(data_directory):
     os.makedirs(data_directory)
 
-  os.system('ln -s {0}/{1} {4}{3}/{2}__{1}'.format(bucket_mount_point, dr_object, dr_bucket, dr_mission, data_path))
+  os.system('ln -s {0}/{1} {2}/{1}'.format(dr_target, dr_object, data_directory))
 
 #
 # generate token for jupyter
